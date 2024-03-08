@@ -1,22 +1,18 @@
 const express = require('express');
-require('dotenv').config();
-const mongoose = require('mongoose');
 const connectDB = require('./config/database');
-
-// Route imports
-const loginRoute = require('./routes/login');
-const registerRoute = require('./routes/register');
+require('dotenv').config();
+const applyRoutes = require('./routes');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Connect to Database
 connectDB();
 
 app.use(express.json());
 
-// Use Routes
-app.use('/api/login', loginRoute);
-app.use('/api/register', registerRoute);
+// Apply routes
+applyRoutes(app);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
