@@ -2,8 +2,8 @@ const Film = require('../models/film');
 
 exports.getFilms = async (req, res) => {
   try {
-    const categories = await Film.find();
-    res.json(categories);
+    const films = await Film.find();
+    res.json(films);
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -11,9 +11,9 @@ exports.getFilms = async (req, res) => {
 
 exports.createFilms = async (req, res) => {
   try {
-    const category = new Film(req.body);
-    await category.save();
-    res.status(201).json(category);
+    const film = new Film(req.body);
+    await film.save();
+    res.status(201).json(film);
   } catch (err) {
     res.status(400).send(err.message);
   }
@@ -21,8 +21,8 @@ exports.createFilms = async (req, res) => {
 
 exports.updateFilm = async (req, res) => {
   try {
-    const category = await Film.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(category);
+    const film = await Film.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(film);
   } catch (err) {
     res.status(400).send(err.message);
   }
