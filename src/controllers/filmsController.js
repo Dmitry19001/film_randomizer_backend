@@ -72,7 +72,7 @@ exports.updateFilm = async (req, res) => {
         categories: categories.map(category => category._id),
       };
 
-      let film = await Film.findByIdAndUpdate(req.params.id, updateData, { new: false });
+      let film = await Film.findByIdAndUpdate(req.params.id, updateData, { new: true });
       
       film = await Film.findById(req.params.id).populate('genres categories');
       const filmWithUsername = await attachUsernames(film);
