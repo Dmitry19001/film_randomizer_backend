@@ -1,9 +1,11 @@
 const Film = require('../models/film');
+const Genre = require('../models/genre');
+const Category = require('../models/category');
 const { attachUsernames } = require('../helpers/filmHelpers');
 
 exports.getFilms = async (req, res) => {
     try {
-      let films = await Film.find();
+      let films = await Film.find().populate('genres categories');
       films = await attachUsernames(films);
       res.json(films);
     } catch (err) {
@@ -13,7 +15,7 @@ exports.getFilms = async (req, res) => {
 
 exports.getFilm = async (req, res) => {
   try {
-    let film = await Film.findById(req.params.id);
+    let film = await Film.findById(req.params.id).populate('genres categories');
     
     const filmWithUsername = await attachUsernames(film);
     res.json(filmWithUsername[0]);
@@ -27,15 +29,25 @@ exports.createFilm = async (req, res) => {
       if (!req.user || !req.user._id) {
         return res.status(403).send("User not authenticated");
       }
+
+      const genres = await Genre.find({
+        localizationId: { $in: req.body.genres }
+      });
+      const categories = await Category.find({
+        localizationId: { $in: req.body.categories }
+      });
   
       const filmData = {
         ...req.body,
         addedBy: req.user._id,
+        genres: genres.map(genre => genre._id),
+        categories: categories.map(category => category._id),
       };
   
       const film = new Film(filmData);
       await film.save();
   
+      film = await Film.findById(film._id).populate('genres categories');
       const filmWithUsername = await attachUsernames(film);
   
       res.status(201).json(filmWithUsername[0]);
@@ -46,8 +58,23 @@ exports.createFilm = async (req, res) => {
 
 exports.updateFilm = async (req, res) => {
     try {
-      let film = await Film.findByIdAndUpdate(req.params.id, req.body, { new: true });
       
+      const genres = await Genre.find({
+        localizationId: { $in: req.body.genres }
+      });
+      const categories = await Category.find({
+        localizationId: { $in: req.body.categories }
+      });
+      
+      const updateData = {
+        ...req.body,
+        genres: genres.map(genre => genre._id),
+        categories: categories.map(category => category._id),
+      };
+
+      let film = await Film.findByIdAndUpdate(req.params.id, updateData, { new: false });
+      
+      film = await Film.findById(req.params.id).populate('genres categories');
       const filmWithUsername = await attachUsernames(film);
       res.json(filmWithUsername[0]);
     } catch (err) {
@@ -55,7 +82,6 @@ exports.updateFilm = async (req, res) => {
     }
 };
   
-
 exports.deleteFilm = async (req, res) => {
     try {
         await Film.findByIdAndDelete(req.params.id);
