@@ -11,7 +11,18 @@ exports.getFilms = async (req, res) => {
     }
 };
 
-exports.createFilms = async (req, res) => {
+exports.getFilm = async (req, res) => {
+  try {
+    let film = await Film.findById(req.params.id);
+    
+    const filmWithUsername = await attachUsernames(film);
+    res.json(filmWithUsername[0]);
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+};
+
+exports.createFilm = async (req, res) => {
     try {
       if (!req.user || !req.user._id) {
         return res.status(403).send("User not authenticated");

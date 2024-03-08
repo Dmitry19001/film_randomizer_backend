@@ -9,7 +9,16 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-exports.createCategories = async (req, res) => {
+exports.getCategory = async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    res.json(category);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+}
+
+exports.createCategory = async (req, res) => {
   try {
     const category = new Category(req.body);
     await category.save();

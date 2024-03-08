@@ -9,6 +9,15 @@ exports.getGenres = async (req, res) => {
   }
 };
 
+exports.getGenre = async (req, res) => {
+  try {
+    const genre = await Genre.findById(req.params.id);
+    res.json(genre);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+}
+
 exports.createGenre = async (req, res) => {
   try {
     const genre = new Genre(req.body);
