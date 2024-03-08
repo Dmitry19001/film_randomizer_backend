@@ -1,5 +1,5 @@
-import { verify } from 'jsonwebtoken';
-import { findById } from './User';
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 const authMiddleware = async (req, res, next) => {
   let token;
@@ -8,9 +8,9 @@ const authMiddleware = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      const decoded = verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await findById(decoded.id).select('-password');
+      req.user = await User.findById(decoded.id).select('-password');
 
       next();
     } catch (error) {
@@ -24,4 +24,4 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-export default authMiddleware;
+module.exports = authMiddleware;

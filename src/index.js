@@ -1,18 +1,18 @@
-import express, { json } from 'express';
+const express = require('express');
 require('dotenv').config();
-import mongoose from 'mongoose';
-import connectDB from './config/database'; // Adjust the path as necessary
+const mongoose = require('mongoose');
+const connectDB = require('./config/database');
 
 // Route imports
-import loginRoute from './routes/login';
-import registerRoute from './routes/register';
+const loginRoute = require('./routes/login');
+const registerRoute = require('./routes/register');
 
 const app = express();
 
 // Connect to Database
 connectDB();
 
-app.use(json());
+app.use(express.json());
 
 // Use Routes
 app.use('/api/login', loginRoute);

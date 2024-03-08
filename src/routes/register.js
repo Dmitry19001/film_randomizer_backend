@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import bcrypt from 'bcryptjs';
-import { sign } from 'jsonwebtoken';
-import User, { findOne } from '../../models/user';
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
-const router = Router();
+const router = express.Router();
 
 router.post('/', async (req, res) => {
   const { username, password } = req.body;
@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
   }
 
   // Check for existing user
-  const userExists = await findOne({ username });
+  const userExists = await User.findOne({ username });
   if (userExists) {
     return res.status(400).send('User already exists');
   }
@@ -24,9 +24,9 @@ router.post('/', async (req, res) => {
   await user.save();
 
   // Create token
-  const token = sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '300d' });
 
   res.status(201).json({ token });
 });
 
-export default router;
+module.exports = router;
