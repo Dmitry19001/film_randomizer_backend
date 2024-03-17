@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+require('dotenv').config(); 
 
 const router = express.Router();
 
@@ -24,9 +25,9 @@ router.post('/', async (req, res) => {
   await user.save();
 
   // Create token
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '300d' });
+  const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: '300d' });
 
-  res.status(201).json({ token });
+  res.status(201).json({ "token": token });
 });
 
 module.exports = router;
