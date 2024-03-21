@@ -3,7 +3,7 @@ const Genre = require('../models/genre');
 const Category = require('../models/category');
 const { attachUsernames } = require('../helpers/filmHelpers');
 
-exports.getFilms = async (req, res) => {
+const getFilms = async (req, res) => {
     try {
       let films = await Film.find().populate('genres categories');
       films = await attachUsernames(films);
@@ -13,7 +13,7 @@ exports.getFilms = async (req, res) => {
     }
 };
 
-exports.getFilm = async (req, res) => {
+const getFilm = async (req, res) => {
   try {
     let film = await Film.findById(req.params.id).populate('genres categories');
     
@@ -24,7 +24,7 @@ exports.getFilm = async (req, res) => {
   }
 };
 
-exports.createFilm = async (req, res) => {
+const createFilm = async (req, res) => {
     try {
       if (!req.user || !req.user._id) {
         return res.status(403).send("User not authenticated");
@@ -56,7 +56,7 @@ exports.createFilm = async (req, res) => {
     }
 };
 
-exports.updateFilm = async (req, res) => {
+const updateFilm = async (req, res) => {
     try {
       
       const genres = await Genre.find({
@@ -82,7 +82,7 @@ exports.updateFilm = async (req, res) => {
     }
 };
   
-exports.deleteFilm = async (req, res) => {
+const deleteFilm = async (req, res) => {
     try {
         await Film.findByIdAndDelete(req.params.id);
         res.status(204).send("Film deleted");
@@ -90,3 +90,11 @@ exports.deleteFilm = async (req, res) => {
         res.status(500).send(err.message);
     }
 };
+
+module.exports = {
+  getFilms,
+  getFilm,
+  createFilm,
+  updateFilm,
+  deleteFilm
+}
