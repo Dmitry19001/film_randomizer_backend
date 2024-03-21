@@ -7,11 +7,14 @@ const {
   updateFilm,
   deleteFilm,
 } = require('../controllers/filmsController');
+const { protect } = require('../middleware/auth');
 
-router.get('/', getFilms);
-router.get('/:id', getFilm);
-router.post('/', createFilm);
-router.put('/:id', updateFilm);
-router.delete('/:id', deleteFilm);
+router.route('/')
+  .get(getFilms)
+  .post(protect, createFilm);
+router.route('/:id')
+  .get(getFilm)
+  .put(protect, updateFilm)
+  .delete(protect, deleteFilm);
 
 module.exports = router;
