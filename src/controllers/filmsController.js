@@ -44,7 +44,7 @@ const postFilm = async (req, res) => {
         categories: categories.map(category => category._id),
       };
   
-      const film = new Film(filmData);
+      let film = new Film(filmData);
       await film.save();
   
       film = await Film.findById(film._id).populate('genres categories');
