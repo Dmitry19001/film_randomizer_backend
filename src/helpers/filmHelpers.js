@@ -12,7 +12,7 @@ async function attachUsernames(films) {
   }, {});
 
   return filmArray.map(film => ({
-    ...film.toObject(), // Convert Mongoose document to a plain object
+    ...film.toObject(),
     addedBy: usernameMap[film.addedBy.toString()],
   }));
 }
