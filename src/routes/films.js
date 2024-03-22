@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   getFilms,
   getFilm,
-  createFilm,
+  postFilm,
   updateFilm,
   deleteFilm,
 } = require('../controllers/filmsController');
@@ -11,7 +11,7 @@ const { protect } = require('../middleware/auth');
 
 router.route('/')
   .get(getFilms)
-  .post(protect, createFilm);
+  .post(protect, postFilm);
 router.route('/:id')
   .get(getFilm)
   .put(protect, updateFilm)

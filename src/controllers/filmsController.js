@@ -24,7 +24,7 @@ const getFilm = async (req, res) => {
   }
 };
 
-const createFilm = async (req, res) => {
+const postFilm = async (req, res) => {
     try {
       if (!req.user || !req.user._id) {
         return res.status(403).send("User not authenticated");
@@ -94,7 +94,7 @@ const deleteFilm = async (req, res) => {
 module.exports = {
   getFilms,
   getFilm,
-  createFilm,
+  postFilm,
   updateFilm,
   deleteFilm
 }
