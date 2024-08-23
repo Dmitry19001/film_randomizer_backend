@@ -45,22 +45,4 @@ const register =  asyncHandler(async (req, res) => {
   res.status(201).json({ "token": token });
 });
 
-const updatePasswords = async () => {
-  const users = await User.find(); // Retrieve all users
-
-  for (let user of users) {
-    if (!user.password.startsWith('$2a$')) { // Check if the password is already hashed
-      const hashedPassword = await bcrypt.hash(user.password, 10); // Hash the current password
-      user.password = hashedPassword; // Update the user's password field
-      await user.save(); // Save the user with the updated password
-      console.log(`Password for user ${user.username} updated.`);
-    }
-  }
-  
-  console.log('All user passwords updated.');
-  process.exit(); // Exit the process after completion
-};
-
-updatePasswords();
-
 module.exports = { login, register };
