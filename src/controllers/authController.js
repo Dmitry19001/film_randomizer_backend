@@ -12,7 +12,7 @@ const login =  asyncHandler(async (req, res) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     // Create token
     const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: '300d' });
-    res.status(201).json({ "token": token });
+    res.status(200).json({ "token": token });
   } else {
     res.status(400).send('Invalid credentials');
   }
