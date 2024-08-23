@@ -7,7 +7,7 @@ const {
   updateFilm,
   deleteFilm,
 } = require('../controllers/filmsController');
-const { protect } = require('../middleware/auth');
+const protect  = require('../middleware/auth');
 
 router.route('/')
   .get(getFilms)

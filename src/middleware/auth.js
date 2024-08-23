@@ -1,28 +1,51 @@
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
 const User = require('../models/user');
-require('dotenv').config();
 
-const protect = async (req, res, next) => {
-  let token;
+// Middleware to protect routes
+const protect = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+  if (!authHeader || !authHeader.startsWith('Bearer')) {
+    return res.status(401).json({
+      message: "Not authorized, no token"
+    });
+  }
 
-      const decoded = jwt.verify(token, process.env.SECRET_KEY);
+  const token = authHeader.split(' ')[1];
 
-      req.user = await User.findById(decoded.id).select('-password');
+  // Sometimes the token is 'null' or empty string
+  if (!token || token === 'null') {
+    return res.status(401).json({
+      message: "Not authorized, no token"
+    });
+  }
 
-      next();
-    } catch (error) {
-      console.log(error);
-      res.status(401).send('Not authorized');
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+
+    if (!req.user) {
+      return res.status(401).json({
+        message: "Not authorized, user not found"
+      });
     }
-  }
 
-  if (!token) {
-    res.status(401).send('Not authorized, no token');
-  }
-};
+    // After verifying token, we can check subscription
+    next();
+  } catch (error) {
+    console.error('Error verifying token:', error);
 
-module.exports = { protect };
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({
+        message: "Session has expired."
+      });
+    }
+
+    return res.status(401).json({
+      message: "Not authorized, token failed"
+    });
+  }
+});
+
+module.exports = protect;
