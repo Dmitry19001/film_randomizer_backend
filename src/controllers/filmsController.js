@@ -42,6 +42,7 @@ const postFilm = async (req, res) => {
         addedBy: req.user._id,
         genres: genres.map(genre => genre._id),
         categories: categories.map(category => category._id),
+        imageUrl: req.imageUrl ?? '',
       };
   
       let film = new Film(filmData);
@@ -70,6 +71,7 @@ const updateFilm = async (req, res) => {
         ...req.body,
         genres: genres.map(genre => genre._id),
         categories: categories.map(category => category._id),
+        imageUrl: req.imageUrl ?? '',
       };
 
       let film = await Film.findByIdAndUpdate(req.params.id, updateData, { new: true });

@@ -22,6 +22,9 @@ const filmSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  imageUrl: {
+    type: String
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Film', filmSchema);
