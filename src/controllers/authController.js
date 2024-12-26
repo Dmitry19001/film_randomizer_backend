@@ -67,7 +67,7 @@ const forceChangePassword = asyncHandler(async (user, newPassword) => {
   // Should be accessible only when forceChangePassword is true
   // OR when changePassword is called and oldPassword is correct
   
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const hashedPassword = bcrypt.hash(newPassword, 10);
 
   user.password = hashedPassword;
   user.forceChangePassword = false;

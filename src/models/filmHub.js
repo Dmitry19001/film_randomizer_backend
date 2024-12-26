@@ -14,7 +14,7 @@ const filmHubSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  users_ids: [{
+  user_ids: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
