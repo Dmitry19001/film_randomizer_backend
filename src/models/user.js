@@ -10,7 +10,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a password'],
     },
-  
+    forceChangePassword: {
+        // Manual password change
+        type: Boolean,
+        default: false,
+    },
 });
 
 module.exports = mongoose.model('User', userSchema);
