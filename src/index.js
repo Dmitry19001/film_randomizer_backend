@@ -24,6 +24,8 @@ applyRoutes(app);
 const { checkAndUpdateIP } = require('./helpers/ipUploader');
 const cron = require('cron');
 
+checkAndUpdateIP();
+
 // Run the IP update check every 10 minutes
 const ipUpdateJob = new cron.CronJob('*/10 * * * *', async () => {
     console.log('Running IP update check...');

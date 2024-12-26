@@ -122,12 +122,10 @@ async function sleepUntilTokenRefresh() {
 // Get Dropbox Client with Refreshed Token
 function getDropboxClient() {
     const tokens = JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8'));
+    // Just pass the short-lived token directly as `token`
     return dropboxV2Api.authenticate({
-        client_id,
-        client_secret,
-        refresh_token: tokens.refresh_token,
-        access_token: tokens.access_token,
+      token: tokens.access_token
     });
-}
+  }
 
 module.exports = { exchangeCodeForTokens, generateAuthUrl, getDropboxClient, refreshToken, sleepUntilTokenRefresh};

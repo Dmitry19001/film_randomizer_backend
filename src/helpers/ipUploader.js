@@ -1,6 +1,7 @@
 const { getDropboxClient } = require('./dropboxOAuth');
 const fs = require('fs');
 const axios = require('axios');
+const { Readable } = require('stream');  // <-- Import or require the stream module
 
 // Dropbox file path for storing the public IP
 const DROPBOX_FILE_PATH = '/public_ip.txt';
@@ -11,7 +12,7 @@ async function getPublicIP() {
         const response = await axios.get('https://api.ipify.org?format=json');
         return response.data.ip;
     } catch (error) {
-        console.error('Error fetching public IP:', error.message);
+        console.error('Error fetching public IP:', error);
         throw error;
     }
 }
@@ -19,8 +20,10 @@ async function getPublicIP() {
 // Function to read the IP stored in Dropbox
 async function getStoredIP() {
     try {
+        // Get Dropbox client
         const dropbox = getDropboxClient();
 
+        // Read the IP from Dropbox
         return new Promise((resolve, reject) => {
             dropbox({
                 resource: 'files/download',
@@ -28,43 +31,56 @@ async function getStoredIP() {
             }, (err, result, response) => {
                 if (err) {
                     if (err.status === 409) {
-                        // File doesn't exist, return null
-                        resolve(null);
-                    } else {
-                        reject(err);
+                        // File doesn't exist
+                        return resolve(null);
                     }
-                } else {
-                    resolve(response.toString().trim());
-                }
+                    return reject(err);
+                    }              
+
+                    let fileContent;
+                    // If response.body is a string, that's the actual IP text
+                    if (response && typeof response.body === 'string') {
+                        fileContent = response.body.trim();
+                    } else {
+                        // Fallback in case of unexpected format
+                        fileContent = JSON.stringify(response);
+                    }
+                    resolve(fileContent);
             });
         });
     } catch (error) {
-        console.error('Error fetching stored IP from Dropbox:', error.message);
+        console.error('Error fetching stored IP from Dropbox:', error);
         throw error;
     }
 }
 
-// Function to upload or update the IP in Dropbox
+// Convert your newIP (string) to a stream
+function stringToStream(str) {
+    return Readable.from(str);
+}
+
 async function updateStoredIP(newIP) {
     try {
         const dropbox = getDropboxClient();
+        const contentStream = await stringToStream(newIP);
 
         return new Promise((resolve, reject) => {
-            const content = Buffer.from(newIP, 'utf-8');
             dropbox({
                 resource: 'files/upload',
-                parameters: { path: DROPBOX_FILE_PATH, mode: 'overwrite' },
-                readStream: content,
+                parameters: {
+                path: DROPBOX_FILE_PATH,
+                mode: 'overwrite',
+                },
+                readStream: contentStream, // pass in the stream here
             }, (err, result) => {
                 if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
+                return reject(err);
                 }
+                resolve(result);
             });
         });
     } catch (error) {
-        console.error('Error updating IP in Dropbox:', error.message);
+        console.error('Error updating IP in Dropbox:', error);
         throw error;
     }
 }
@@ -78,6 +94,7 @@ async function checkAndUpdateIP() {
         const storedIP = await getStoredIP();
         console.log(`Stored public IP: ${storedIP || 'None'}`);
 
+        // Check if the IP has changed
         if (currentIP !== storedIP) {
             console.log(`IP has changed. Updating Dropbox with new IP: ${currentIP}`);
             await updateStoredIP(currentIP);
@@ -86,7 +103,7 @@ async function checkAndUpdateIP() {
             console.log('IP has not changed. No update needed.');
         }
     } catch (error) {
-        console.error('Error in IP check and update process:', error.message);
+        console.error('Error in IP check and update process:', error);
     }
 }
 
