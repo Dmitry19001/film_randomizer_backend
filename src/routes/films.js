@@ -10,10 +10,10 @@ const {
 const protect  = require('../middleware/auth');
 
 router.route('/')
-  .get(getFilms)
+  .get(protect, getFilms)
   .post(protect, postFilm);
 router.route('/:id')
-  .get(getFilm)
+  .get(protect,getFilm)
   .put(protect, updateFilm)
   .delete(protect, deleteFilm);
 
