@@ -1,6 +1,6 @@
 // controllers/filmsController.js
 const asyncHandler = require('express-async-handler');
-const { In } = require('typeorm');
+const { In, MoreThan } = require('typeorm');
 const AppDataSource = require('../data-source');
 const { attachUsernames } = require('../helpers/filmHelpers');
 
@@ -9,6 +9,19 @@ const genreRepo     = AppDataSource.getRepository('Genre');
 const categoryRepo  = AppDataSource.getRepository('Category');
 
 exports.getFilms = asyncHandler(async (req, res) => {
+  const { showWatched } = req.query;
+
+  if (showWatched !== undefined) {
+    showWatched = showWatched === 'true';  
+  }
+
+  let where = {};
+  if (showWatched === 'true') {
+    where.isWatched = MoreThan(0);
+  } else if (showWatched === 'false') {
+    where.isWatched = 0;
+  }
+
   const films = await filmRepo.find({
     relations: ['genres', 'categories', 'addedBy'],
   });
