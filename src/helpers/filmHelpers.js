@@ -1,20 +1,28 @@
-const User = require('../models/user');
+// helpers/filmHelpers.js
 
-async function attachUsernames(films) {
+/**
+ * Given a film or array of films (TypeORM entities or plain objects),
+ * replaces the `addedBy` relation object with its username.
+ *
+ * @param {object|object[]} films
+ * @returns {object|object[]}
+ */
+function attachUsernames(films) {
   const filmArray = Array.isArray(films) ? films : [films];
-  
-  const userIds = [...new Set(filmArray.map(film => film.addedBy.toString()))];
-  const users = await User.find({ '_id': { $in: userIds } });
 
-  const usernameMap = users.reduce((acc, user) => {
-    acc[user._id.toString()] = user.username;
-    return acc;
-  }, {});
+  const result = filmArray.map((film) => {
+    // If it's a TypeORM entity, toJSON() will strip metadata
+    const plain = typeof film.toJSON === 'function' ? film.toJSON() : { ...film };
 
-  return filmArray.map(film => ({
-    ...film.toObject(),
-    addedBy: usernameMap[film.addedBy.toString()],
-  }));
+    // If addedBy was loaded as a relation, it's an object with a .username
+    if (plain.addedBy && typeof plain.addedBy === 'object') {
+      plain.addedBy = plain.addedBy.username;
+    }
+
+    return plain;
+  });
+
+  return Array.isArray(films) ? result : result[0];
 }
 
 module.exports = { attachUsernames };
