@@ -19,6 +19,7 @@ exports.getFilms = asyncHandler(async (req, res) => {
   }
 
   const films = await filmRepo.find({
+    where,
     relations: ['genres', 'categories', 'addedBy'],
   });
   const withUsers = await attachUsernames(films);
