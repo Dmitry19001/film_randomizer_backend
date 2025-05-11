@@ -1,51 +1,40 @@
+// middleware/auth.js
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/user');
+const AppDataSource = require('../data-source');
 
-// Middleware to protect routes
+const userRepo = AppDataSource.getRepository('User');
+
 const protect = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer')) {
-    return res.status(401).json({
-      message: "Not authorized, no token"
-    });
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 
   const token = authHeader.split(' ')[1];
-
-  // Sometimes the token is 'null' or empty string
   if (!token || token === 'null') {
-    return res.status(401).json({
-      message: "Not authorized, no token"
-    });
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    
-    req.user = await User.findById(decoded.id).select('-password');
-
-    if (!req.user) {
-      return res.status(401).json({
-        message: "Not authorized, user not found"
-      });
-    }
-
-    // After verifying token, we can check subscription
-    next();
-  } catch (error) {
-    console.error('Error verifying token:', error);
-
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
-        message: "Session has expired."
-      });
-    }
-
-    return res.status(401).json({
-      message: "Not authorized, token failed"
+    const user = await userRepo.findOne({
+      where: { id: decoded.id },
+      select: ['id', 'username', 'forceChangePassword'], 
     });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ message: 'Session has expired.' });
+    }
+    console.error('Error verifying token:', err);
+    res.status(401).json({ message: 'Not authorized, token failed' });
   }
 });
 
