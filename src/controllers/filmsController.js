@@ -1,6 +1,6 @@
 // controllers/filmsController.js
 const asyncHandler = require('express-async-handler');
-const { In, MoreThan } = require('typeorm');
+const { In, MoreThanOrEqual } = require('typeorm');
 const AppDataSource = require('../data-source');
 const { attachUsernames } = require('../helpers/filmHelpers');
 
@@ -13,7 +13,7 @@ exports.getFilms = asyncHandler(async (req, res) => {
 
   let where = {};
   if (showWatched === 'true') {
-    where.isWatched = MoreThan(0);
+    where.isWatched = MoreThanOrEqual(0);
   } else if (showWatched === 'false') {
     where.isWatched = 0;
   }
