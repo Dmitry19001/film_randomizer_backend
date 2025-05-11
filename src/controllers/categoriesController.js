@@ -1,47 +1,32 @@
-const Category = require('../models/category');
+// controllers/categoriesController.js
+const asyncHandler = require('express-async-handler');
+const AppDataSource = require('../data-source');
 
-exports.getCategories = async (req, res) => {
-  try {
-    const categories = await Category.find();
-    res.json(categories);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
+const categoryRepo = AppDataSource.getRepository('Category');
 
-exports.getCategory = async (req, res) => {
-  try {
-    const category = await Category.findById(req.params.id);
-    res.json(category);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-}
+exports.getCategories = asyncHandler(async (req, res) => {
+  const categories = await categoryRepo.find();
+  res.json(categories);
+});
 
-exports.createCategory = async (req, res) => {
-  try {
-    const category = new Category(req.body);
-    await category.save();
-    res.status(201).json(category);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
+exports.getCategory = asyncHandler(async (req, res) => {
+  const category = await categoryRepo.findOneBy({ id: req.params.id });
+  res.json(category);
+});
 
-exports.updateCategory = async (req, res) => {
-  try {
-    const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(category);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
+exports.createCategory = asyncHandler(async (req, res) => {
+  const cat = categoryRepo.create(req.body);
+  const saved = await categoryRepo.save(cat);
+  res.status(201).json(saved);
+});
 
-exports.deleteCategory = async (req, res) => {
-  try {
-    await Category.findByIdAndDelete(req.params.id);
-    res.status(204).send("Category deleted");
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
+exports.updateCategory = asyncHandler(async (req, res) => {
+  await categoryRepo.update(req.params.id, req.body);
+  const updated = await categoryRepo.findOneBy({ id: req.params.id });
+  res.json(updated);
+});
+
+exports.deleteCategory = asyncHandler(async (req, res) => {
+  await categoryRepo.delete(req.params.id);
+  res.status(204).send('Category deleted');
+});

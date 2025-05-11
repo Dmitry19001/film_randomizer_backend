@@ -1,102 +1,90 @@
-const Film = require('../models/film');
-const Genre = require('../models/genre');
-const Category = require('../models/category');
+// controllers/filmsController.js
+const asyncHandler = require('express-async-handler');
+const { In } = require('typeorm');
+const AppDataSource = require('../data-source');
 const { attachUsernames } = require('../helpers/filmHelpers');
 
-const getFilms = async (req, res) => {
-    try {
-      let films = await Film.find().populate('genres categories');
-      films = await attachUsernames(films);
-      res.json(films);
-    } catch (err) {
-      res.status(500).send(err.message);
-    }
-};
+const filmRepo      = AppDataSource.getRepository('Film');
+const genreRepo     = AppDataSource.getRepository('Genre');
+const categoryRepo  = AppDataSource.getRepository('Category');
 
-const getFilm = async (req, res) => {
-  try {
-    let film = await Film.findById(req.params.id).populate('genres categories');
-    
-    const filmWithUsername = await attachUsernames(film);
-    res.json(filmWithUsername[0]);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
+exports.getFilms = asyncHandler(async (req, res) => {
+  const films = await filmRepo.find({
+    relations: ['genres', 'categories', 'addedBy'],
+  });
+  const withUsers = await attachUsernames(films);
+  res.json(withUsers);
+});
 
-const postFilm = async (req, res) => {
-    try {
-      if (!req.user || !req.user._id) {
-        return res.status(403).send("User not authenticated");
-      }
+exports.getFilm = asyncHandler(async (req, res) => {
+  const film = await filmRepo.findOne({
+    where: { id: req.params.id },
+    relations: ['genres', 'categories', 'addedBy'],
+  });
+  const [single] = await attachUsernames(film ? [film] : []);
+  res.json(single);
+});
 
-      const genres = await Genre.find({
-        localizationId: { $in: req.body.genres }
-      });
-      const categories = await Category.find({
-        localizationId: { $in: req.body.categories }
-      });
-  
-      const filmData = {
-        ...req.body,
-        addedBy: req.user._id,
-        genres: genres.map(genre => genre._id),
-        categories: categories.map(category => category._id),
-        imageUrl: req.imageUrl ?? '',
-      };
-  
-      let film = new Film(filmData);
-      await film.save();
-  
-      film = await Film.findById(film._id).populate('genres categories');
-      const filmWithUsername = await attachUsernames(film);
-  
-      res.status(201).json(filmWithUsername[0]);
-    } catch (err) {
-      res.status(400).send(err.message);
-    }
-};
+exports.postFilm = asyncHandler(async (req, res) => {
+  // ensure authenticated
+  if (!req.user?.id) return res.status(403).send('User not authenticated');
 
-const updateFilm = async (req, res) => {
-    try {
-      
-      const genres = await Genre.find({
-        localizationId: { $in: req.body.genres }
-      });
-      const categories = await Category.find({
-        localizationId: { $in: req.body.categories }
-      });
-      
-      const updateData = {
-        ...req.body,
-        genres: genres.map(genre => genre._id),
-        categories: categories.map(category => category._id),
-        imageUrl: req.imageUrl ?? '',
-      };
+  // lookup genres & categories by localizationId
+  const genres = await genreRepo.find({
+    where: { localizationId: In(req.body.genres || []) },
+  });
+  const categories = await categoryRepo.find({
+    where: { localizationId: In(req.body.categories || []) },
+  });
 
-      let film = await Film.findByIdAndUpdate(req.params.id, updateData, { new: true });
-      
-      film = await Film.findById(req.params.id).populate('genres categories');
-      const filmWithUsername = await attachUsernames(film);
-      res.json(filmWithUsername[0]);
-    } catch (err) {
-      res.status(400).send(err.message);
-    }
-};
-  
-const deleteFilm = async (req, res) => {
-    try {
-        await Film.findByIdAndDelete(req.params.id);
-        res.status(204).send("Film deleted");
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
-};
+  const filmData = {
+    title:      req.body.title,
+    isWatched:  req.body.isWatched ?? false,
+    imageUrl:   req.imageUrl || '',
+    addedBy:    { id: req.user.id },
+    genres:     genres.map(g => ({ id: g.id })),
+    categories: categories.map(c => ({ id: c.id })),
+  };
 
-module.exports = {
-  getFilms,
-  getFilm,
-  postFilm,
-  updateFilm,
-  deleteFilm
-}
+  let newFilm = filmRepo.create(filmData);
+  newFilm = await filmRepo.save(newFilm);
+
+  // reload with relations
+  const saved = await filmRepo.findOne({
+    where: { id: newFilm.id },
+    relations: ['genres', 'categories', 'addedBy'],
+  });
+  const [out] = await attachUsernames(saved ? [saved] : []);
+  res.status(201).json(out);
+});
+
+exports.updateFilm = asyncHandler(async (req, res) => {
+  // lookup updated genres/categories
+  const genres = await genreRepo.find({
+    where: { localizationId: In(req.body.genres || []) },
+  });
+  const categories = await categoryRepo.find({
+    where: { localizationId: In(req.body.categories || []) },
+  });
+
+  const updateData = {
+    title:      req.body.title,
+    isWatched:  req.body.isWatched,
+    imageUrl:   req.imageUrl || '',
+    genres:     genres.map(g => ({ id: g.id })),
+    categories: categories.map(c => ({ id: c.id })),
+  };
+
+  await filmRepo.update(req.params.id, updateData);
+  const updated = await filmRepo.findOne({
+    where: { id: req.params.id },
+    relations: ['genres', 'categories', 'addedBy'],
+  });
+  const [out] = await attachUsernames(updated ? [updated] : []);
+  res.json(out);
+});
+
+exports.deleteFilm = asyncHandler(async (req, res) => {
+  await filmRepo.delete(req.params.id);
+  res.status(204).send('Film deleted');
+});

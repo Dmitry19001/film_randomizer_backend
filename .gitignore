@@ -6,3 +6,4 @@
 /scripts
 dropbox_tokens.json
 npm-output.log
+db.sqlite

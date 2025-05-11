@@ -1,76 +1,73 @@
+// controllers/authController.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
 const asyncHandler = require('express-async-handler');
-require('dotenv').config(); 
+const AppDataSource = require('../data-source');
+require('dotenv').config();
 
-const login =  asyncHandler(async (req, res) => {
+const userRepo = AppDataSource.getRepository('User');
+
+const login = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
+  const user = await userRepo.findOneBy({ username });
+  if (!user) return res.status(400).send('Invalid credentials');
 
-  // Check for user
-  const user = await User.findOne({ username });
-
-  // Check if forceChangePassword is true
-  if (user && user.forceChangePassword) {
-    forceChangePassword(user, password);
+  // If flagged to force password change, apply it now
+  if (user.forceChangePassword) {
+    await forceChangePassword(user, password);
   }
 
-  if (user && (await bcrypt.compare(password, user.password))) {
-    // Create token
-    const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: '300d' });
-    res.status(200).json({ "token": token });
-  } else {
-    res.status(400).send('Invalid credentials');
-  }
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return res.status(400).send('Invalid credentials');
+
+  const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, {
+    expiresIn: '300d',
+  });
+  res.status(200).json({ token });
 });
 
-const register =  asyncHandler(async (req, res) => {
+const register = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
-
-  // Simple validation
   if (!username || !password) {
     return res.status(400).send('Please include all fields');
   }
 
-  // Check for existing user
-  const userExists = await User.findOne({ username });
-  if (userExists) {
+  const exists = await userRepo.findOneBy({ username });
+  if (exists) {
     return res.status(400).send('User already exists');
   }
 
-  // Encrypt password
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashed = await bcrypt.hash(password, 10);
+  const newUser = userRepo.create({
+    username,
+    password: hashed,
+    forceChangePassword: false,
+  });
+  await userRepo.save(newUser);
 
-  // Create user
-  const user = new User({ username, password: hashedPassword });
-  await user.save();
-
-  // Create token
-  const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: '300d' });
-
-  res.status(201).json({ "token": token });
+  const token = jwt.sign({ id: newUser.id }, process.env.SECRET_KEY, {
+    expiresIn: '300d',
+  });
+  res.status(201).json({ token });
 });
 
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  const user = await User.findById(req.user.id);
+  const user = await userRepo.findOneBy({ id: req.user.id });
+  if (!user) return res.status(400).send('Invalid credentials');
 
-  if (user && (await bcrypt.compare(oldPassword, user.password))) {
-    forceChangePassword(user, newPassword);
-    res.status(200).send('Password changed successfully');
-  } else {
-    res.status(400).send('Invalid credentials');
-  }
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) return res.status(400).send('Invalid credentials');
+
+  await forceChangePassword(user, newPassword);
+  res.status(200).send('Password changed successfully');
 });
 
 const forceChangePassword = asyncHandler(async (user, newPassword) => {
-  // Should be accessible only when forceChangePassword is true
-  // OR when changePassword is called and oldPassword is correct
-  
-  const hashedPassword = bcrypt.hash(newPassword, 10);
-
-  user.password = hashedPassword;
+  const hashed = await bcrypt.hash(newPassword, 10);
+  user.password = hashed;
   user.forceChangePassword = false;
-  await user.save();
-})
+  await userRepo.save(user);
+});
+
 module.exports = { login, register, changePassword };

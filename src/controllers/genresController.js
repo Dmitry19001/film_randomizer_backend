@@ -1,47 +1,32 @@
-const Genre = require('../models/genre');
+// controllers/genresController.js
+const asyncHandler = require('express-async-handler');
+const AppDataSource = require('../data-source');
 
-exports.getGenres = async (req, res) => {
-  try {
-    const genres = await Genre.find();
-    res.json(genres);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
+const genreRepo = AppDataSource.getRepository('Genre');
 
-exports.getGenre = async (req, res) => {
-  try {
-    const genre = await Genre.findById(req.params.id);
-    res.json(genre);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-}
+exports.getGenres = asyncHandler(async (req, res) => {
+  const genres = await genreRepo.find();
+  res.json(genres);
+});
 
-exports.createGenre = async (req, res) => {
-  try {
-    const genre = new Genre(req.body);
-    await genre.save();
-    res.status(201).json(genre);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
+exports.getGenre = asyncHandler(async (req, res) => {
+  const genre = await genreRepo.findOneBy({ id: req.params.id });
+  res.json(genre);
+});
 
-exports.updateGenre = async (req, res) => {
-  try {
-    const genre = await Genre.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(genre);
-  } catch (err) {
-    res.status(400).send(err.message);
-  }
-};
+exports.createGenre = asyncHandler(async (req, res) => {
+  const g = genreRepo.create(req.body);
+  const saved = await genreRepo.save(g);
+  res.status(201).json(saved);
+});
 
-exports.deleteGenre = async (req, res) => {
-  try {
-    await Genre.findByIdAndDelete(req.params.id);
-    res.status(204).send("Genre deleted");
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
+exports.updateGenre = asyncHandler(async (req, res) => {
+  await genreRepo.update(req.params.id, req.body);
+  const updated = await genreRepo.findOneBy({ id: req.params.id });
+  res.json(updated);
+});
+
+exports.deleteGenre = asyncHandler(async (req, res) => {
+  await genreRepo.delete(req.params.id);
+  res.status(204).send('Genre deleted');
+});
