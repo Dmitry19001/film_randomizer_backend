@@ -11,10 +11,6 @@ const categoryRepo  = AppDataSource.getRepository('Category');
 exports.getFilms = asyncHandler(async (req, res) => {
   const { showWatched } = req.query;
 
-  if (showWatched !== undefined) {
-    showWatched = showWatched === 'true';  
-  }
-
   let where = {};
   if (showWatched === 'true') {
     where.isWatched = MoreThan(0);
